@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Войти через Telegram</title>
+</head>
+
+<body>
+    {% if request.user.is_authenticated %}
+    <h1>Добро пожаловать, {{request.user}}!</h1>
+    <button style="padding: 10px 20px; font-size: 16px;" onclick="logout()">Выйти</button>
+    {% else %}
+    <button style="padding: 10px 20px; font-size: 16px;" onclick="start_telegram_auth()">Войти через Telegram</button>
+    {% endif %}
+    <script>
+        function sendPostRequestAndReload(id) {
+            fetch('/auth_user/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ id: id })
+            })
+                .then(response => response.json().then(data => ({ status: response.status, body: data })))
+                .then(({ status, body }) => {
+                    if (status === 200) {
+                        // Если статус 200, перезагружаем страницу
+                        console.log('Authentication successful:', body);
+                        window.location.reload();
+                    } else {
+                        // Обработка ошибок (не 200 статус)
+                        console.error('Error:', body.error || 'Unknown error');
+                    }
+                })
+                .catch(error => {
+                    // Обработка сетевых ошибок
+                    console.error('Network error:', error);
+                });
+        }
+
+        function start_telegram_auth() {
+            fetch('/generate_token/', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+            })
+                .then(response => response.json().then(data => ({ status: response.status, body: data })))
+                .then(({ status, body }) => {
+                    if (status === 200) {
+                        console.debug('Token generated: ', body.token);
+                        window.open(`https://t.me/{{TELEGRAM_BOT_NAME}}?start=${body.token}`);
+                        setInterval(() => {
+                            sendPostRequestAndReload(body.token);
+                        }, 1000);
+                    } else {
+                        console.error('Error:', body.error || 'Unknown error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Network error:', error);
+                });
+        }
+
+        function logout() {
+            fetch('/logout/', {
+                method: 'GET',
+            })
+                .then(response => response.json().then(data => ({ status: response.status, body: data })))
+                .then(({ status, body }) => {
+                    if (status === 200) {
+                        window.location.reload();
+                    } else {
+                        console.error('Error:', body.error || 'Unknown error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Network error:', error);
+                });
+        }
+
+        
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,32 @@
+services:
+  django:
+    build: src
+    command: uvicorn telegram_auth.asgi:application --host 0.0.0.0 --reload
+    volumes:
+      - ./src:/src
+    container_name: django
+    env_file: ".env"
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgresql
+
+  bot:
+    build: bot
+    command: python main.py
+    volumes:
+      - ./bot:/bot
+    container_name: bot
+    env_file: ".env"
+
+  postgresql:
+    image: postgres:latest
+    ports:
+      - "5432:5432"
+    env_file: ".env"
+    container_name: postgres
+    volumes:
+      - postgresql_volume:/var/lib/postgresql/data/
+
+volumes:
+  postgresql_volume:
